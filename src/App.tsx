@@ -1,11 +1,291 @@
 import React, { useState } from 'react';
-import { Calendar, ImagePlus, X, Plus, Trash2 } from 'lucide-react';
+import { Calendar, ImagePlus, X, Plus, Trash2, HelpCircle, MapPin, Move, Circle, Upload, Download, FileArchive, Users, Image, BookOpen } from 'lucide-react';
 import WaypointEditor from './components/WaypointEditor';
 import { parseZip } from './lib/waypoint-export';
 import type { Waypoint } from './types';
 import { INITIAL_WAYPOINTS, TEMPLATES } from './types';
 
+function IntroPopup({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div
+        className="relative mx-4 max-w-lg rounded-2xl bg-white p-8 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-full p-1 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-main"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <h2 className="mb-1 text-xl font-bold text-text-main">PPC Waypoint Editor</h2>
+        <p className="mb-5 text-sm text-text-muted">
+          Create waypoint sets for Point Picking Competitions scored on{' '}
+          <a href="https://www.paralogg.se" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">
+            paralogg.se
+          </a>
+        </p>
+
+        <div className="space-y-4 text-sm text-text-main">
+          <div>
+            <h3 className="mb-1 font-bold">Getting started</h3>
+            <ul className="list-inside list-disc space-y-1 text-text-muted">
+              <li><strong className="text-text-main">Ctrl + Click</strong> on the map to place a waypoint</li>
+              <li>Click a waypoint to select it, then edit name, radius and score</li>
+              <li>Drag a waypoint to move it, drag its border to resize</li>
+              <li>Use <strong className="text-text-main">Import</strong> to load a template or an existing file (KML, GPX, CUP, WPT, ZIP)</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-1 font-bold">Competition details</h3>
+            <p className="text-text-muted">
+              Fill in the title, description, dates, banner image and participant list in the sidebar. Participants need a name and their{' '}
+              <a href="https://www.flightlog.org" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">flightlog.org</a> ID.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="mb-1 font-bold">Publishing your competition</h3>
+            <ol className="list-inside list-decimal space-y-1 text-text-muted">
+              <li>When your waypoints and details are ready, click <strong className="text-text-main">Export &rarr; ZIP</strong></li>
+              <li>This creates a package with waypoints in all formats, metadata, participants and your banner image</li>
+              <li>Send the ZIP file to the paralogg.se administrator by email to get it published</li>
+            </ol>
+          </div>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="mt-6 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary/90"
+        >
+          Get started
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HelpPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[2000] flex justify-end" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/30" />
+      <div
+        className="relative z-10 flex h-full w-full max-w-xl flex-col bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-bold text-text-main">Help & Instructions</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-full p-1.5 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-main"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 text-sm">
+          {/* What is PPC */}
+          <section>
+            <h3 className="mb-2 text-base font-bold text-text-main">What is a PPC?</h3>
+            <p className="text-text-muted leading-relaxed">
+              A <strong className="text-text-main">Point Picking Competition</strong> is a paragliding format where pilots
+              collect points by flying through predefined geographic waypoints. Each waypoint is a cylinder with a center
+              coordinate, a radius and a score value. Pilots upload their GPS tracklogs and the scoring system checks which
+              waypoints they passed through. Competitions are scored and tracked on{' '}
+              <a href="https://www.paralogg.se" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">
+                paralogg.se
+              </a>.
+            </p>
+          </section>
+
+          {/* Map editing */}
+          <section>
+            <h3 className="mb-3 text-base font-bold text-text-main">Map editing</h3>
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <MapPin className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-text-main">Place waypoints</p>
+                  <p className="text-text-muted">Hold <kbd className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-bold text-text-main border border-gray-200">Ctrl</kbd> and click anywhere on the map to create a new waypoint.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Move className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-text-main">Move waypoints</p>
+                  <p className="text-text-muted">Click and drag the center of a waypoint circle to reposition it.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Circle className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-text-main">Resize radius</p>
+                  <p className="text-text-muted">Click and drag the border of a waypoint circle to change its radius. You can also type an exact value or use the presets in the sidebar.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Sidebar */}
+          <section>
+            <h3 className="mb-3 text-base font-bold text-text-main">Sidebar</h3>
+            <div className="space-y-3">
+              <div>
+                <p className="font-medium text-text-main">Waypoint list</p>
+                <p className="text-text-muted">Click any waypoint in the list to select it and edit its name, description, radius and score. Use the search bar to filter by name. The trash icon deletes a waypoint.</p>
+              </div>
+              <div>
+                <p className="font-medium text-text-main">Name &amp; description</p>
+                <p className="text-text-muted">The <strong className="text-text-main">name</strong> is a short identifier (max 6 characters) shown on the map label. The <strong className="text-text-main">description</strong> is a longer label for context, e.g. a landmark or place name.</p>
+              </div>
+              <div>
+                <p className="font-medium text-text-main">Score</p>
+                <p className="text-text-muted">The point value a pilot earns for passing through this waypoint. Higher scores for harder-to-reach or more remote waypoints.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Competition details */}
+          <section>
+            <h3 className="mb-3 text-base font-bold text-text-main">Competition details</h3>
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Image className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-text-main">Banner image</p>
+                  <p className="text-text-muted">Click the dashed area at the top of the sidebar to upload a banner image for the competition. It will be included in the ZIP export.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-text-main">Participants</p>
+                  <p className="text-text-muted">
+                    Add pilots who will compete. Each participant needs a <strong className="text-text-main">name</strong> and
+                    their <a href="https://www.flightlog.org" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">flightlog.org</a> <strong className="text-text-main">ID</strong> (the
+                    number in their flightlog profile URL). This is used by paralogg.se to automatically fetch their tracklogs.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Import */}
+          <section>
+            <h3 className="mb-3 text-base font-bold text-text-main">Import</h3>
+            <div className="flex gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Upload className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-text-muted">
+                  Click <strong className="text-text-main">Import</strong> at the bottom of the sidebar to open the import menu. You can load
+                  a <strong className="text-text-main">prebuilt template</strong> (Sala PPC, Lanzarote PPC) or import waypoints from a file.
+                  Supported formats: <strong className="text-text-main">KML</strong> (Google Earth),{' '}
+                  <strong className="text-text-main">GPX</strong> (GPS Exchange),{' '}
+                  <strong className="text-text-main">CUP</strong> (SeeYou),{' '}
+                  <strong className="text-text-main">WPT</strong> (OziExplorer), and{' '}
+                  <strong className="text-text-main">ZIP</strong> packages. ZIP files can include waypoints, metadata, participants and a banner image.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Export & publish */}
+          <section>
+            <h3 className="mb-3 text-base font-bold text-text-main">Export &amp; publish</h3>
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <Download className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-text-muted">
+                    Click <strong className="text-text-main">Export</strong> to download waypoints in individual formats (GPX, KML, CUP, WPT)
+                    for use in flight instruments and planning tools.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <FileArchive className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-text-main">ZIP export (full package)</p>
+                  <p className="text-text-muted">
+                    Choose <strong className="text-text-main">Export &rarr; ZIP</strong> to create a complete competition package. It contains:
+                  </p>
+                  <ul className="mt-1 list-inside list-disc space-y-0.5 text-text-muted">
+                    <li><strong className="text-text-main">PPC.txt</strong> &mdash; title, dates, description</li>
+                    <li><strong className="text-text-main">waypoints.*</strong> &mdash; all four formats (KML, GPX, CUP, WPT)</li>
+                    <li><strong className="text-text-main">participants.csv</strong> &mdash; pilot names and flightlog IDs</li>
+                    <li><strong className="text-text-main">banner image</strong> &mdash; if one was added</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Publishing workflow */}
+          <section className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <h3 className="mb-2 text-base font-bold text-text-main">Publishing to paralogg.se</h3>
+            <ol className="list-inside list-decimal space-y-2 text-text-muted">
+              <li>Fill in all competition details (title, dates, description, banner, participants)</li>
+              <li>Place and configure your waypoints on the map</li>
+              <li>Click <strong className="text-text-main">Export &rarr; ZIP</strong> to download the full package</li>
+              <li>Send the ZIP file by email to the paralogg.se administrator (Staffan) and ask him to publish it</li>
+              <li>Once published, participants can fly the waypoints and their tracklogs will be scored automatically</li>
+            </ol>
+          </section>
+
+          {/* Links */}
+          <section>
+            <h3 className="mb-2 text-base font-bold text-text-main">Useful links</h3>
+            <ul className="space-y-1">
+              <li>
+                <a href="https://www.paralogg.se" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">
+                  paralogg.se
+                </a>{' '}
+                <span className="text-text-muted">&mdash; competition scoring and results</span>
+              </li>
+              <li>
+                <a href="https://www.paralogg.se/ppcComps" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">
+                  paralogg.se/ppcComps
+                </a>{' '}
+                <span className="text-text-muted">&mdash; list of PPC competitions</span>
+              </li>
+              <li>
+                <a href="https://www.flightlog.org" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">
+                  flightlog.org
+                </a>{' '}
+                <span className="text-text-muted">&mdash; pilot flight logs and IDs</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [showIntro, setShowIntro] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
   const [waypoints, setWaypoints] = useState<Waypoint[]>(INITIAL_WAYPOINTS);
   const [title, setTitle] = useState('Untitled Competition');
@@ -204,8 +484,21 @@ export default function App() {
     </div>
   );
 
+  const closeIntro = () => setShowIntro(false);
+
   return (
     <div className="h-screen w-screen font-sans">
+      {showIntro && <IntroPopup onClose={closeIntro} />}
+      {showHelp && <HelpPanel onClose={() => setShowHelp(false)} />}
+
+      <button
+        onClick={() => setShowHelp(true)}
+        className="fixed right-4 top-4 z-[1500] flex h-9 w-9 items-center justify-center rounded-full border border-white/40 bg-white/80 shadow-float backdrop-blur transition-all hover:scale-105 hover:bg-white"
+        title="Help & Instructions"
+      >
+        <HelpCircle className="h-5 w-5 text-text-main" />
+      </button>
+
       <WaypointEditor
         key={editorKey}
         waypoints={waypoints}

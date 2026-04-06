@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-primary: #1186d0;
+  --color-background-light: #f6f7f8;
+  --color-background-dark: #101b22;
+  --color-surface: #ffffff;
+  --color-text-main: #2C3E50;
+  --color-text-muted: #829AB1;
+  --color-accent-destructive: #E05D5D;
+
+  --shadow-float: 0 8px 32px rgba(44, 62, 80, 0.05);
+}
+
+@layer base {
+  body {
+    @apply bg-background-light text-text-main antialiased;
+  }
+}
+
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.map-grid {
+  background-image:
+    linear-gradient(to right, rgba(130, 154, 177, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(130, 154, 177, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.custom-waypoint-icon {
+  background: none !important;
+  border: none !important;
+  pointer-events: none !important;
+}
+
+.wp-icon-label::after {
+  content: attr(data-text);
+}

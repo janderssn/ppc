@@ -141,6 +141,9 @@ const WaypointMapItem: React.FC<WaypointComponentProps> = ({ wp, index, isSelect
   };
 
   const circleRef = useRef<L.Circle | null>(null);
+  const touchActiveRef = useRef(false);
+  const latestHandlers = useRef({ startDrag, moveDrag, endDrag, onSelect });
+  latestHandlers.current = { startDrag, moveDrag, endDrag, onSelect };
 
   useEffect(() => {
     const circle = circleRef.current;
@@ -148,32 +151,31 @@ const WaypointMapItem: React.FC<WaypointComponentProps> = ({ wp, index, isSelect
     const el = circle.getElement();
     if (!el) return;
 
-    let touchActive = false;
-
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       e.preventDefault();
       e.stopPropagation();
-      touchActive = true;
-      onSelect(wp.id);
+      touchActiveRef.current = true;
+      latestHandlers.current.onSelect(wp.id);
       const touch = e.touches[0];
-      const latlng = map.containerPointToLatLng(L.point(touch.clientX - map.getContainer().getBoundingClientRect().left, touch.clientY - map.getContainer().getBoundingClientRect().top));
-      startDrag(latlng);
+      const rect = map.getContainer().getBoundingClientRect();
+      const latlng = map.containerPointToLatLng(L.point(touch.clientX - rect.left, touch.clientY - rect.top));
+      latestHandlers.current.startDrag(latlng);
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!touchActive || e.touches.length !== 1) return;
+      if (!touchActiveRef.current || e.touches.length !== 1) return;
       e.preventDefault();
       const touch = e.touches[0];
       const rect = map.getContainer().getBoundingClientRect();
       const latlng = map.containerPointToLatLng(L.point(touch.clientX - rect.left, touch.clientY - rect.top));
-      moveDrag(latlng);
+      latestHandlers.current.moveDrag(latlng);
     };
 
-    const onTouchEnd = (e: TouchEvent) => {
-      if (!touchActive) return;
-      touchActive = false;
-      endDrag();
+    const onTouchEnd = () => {
+      if (!touchActiveRef.current) return;
+      touchActiveRef.current = false;
+      latestHandlers.current.endDrag();
     };
 
     el.addEventListener('touchstart', onTouchStart, { passive: false });
@@ -185,7 +187,7 @@ const WaypointMapItem: React.FC<WaypointComponentProps> = ({ wp, index, isSelect
       document.removeEventListener('touchmove', onTouchMove);
       document.removeEventListener('touchend', onTouchEnd);
     };
-  });
+  }, [wp.id, map]);
 
   return (
     <>
@@ -422,8 +424,8 @@ export default function WaypointEditor({
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isWaypointsCollapsed, setIsWaypointsCollapsed] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  // Mobile view state: 'map' or 'sidebar'
-  const [mobileView, setMobileView] = useState<'map' | 'sidebar'>('map');
+  // Mobile view state
+  const [mobileView, setMobileView] = useState<'map' | 'details' | 'waypoints'>('map');
   // Mobile add-waypoint mode: tap on map to place
   const [addMode, setAddMode] = useState(false);
   const sidebarStyle = isSidebarCollapsed
@@ -586,9 +588,10 @@ export default function WaypointEditor({
     <div className="flex h-full w-full overflow-hidden relative">
       {/* Sidebar — hidden on mobile when viewing map */}
       <aside
-        className={`relative z-[999] flex h-full flex-col border-r border-gray-200 bg-surface shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-[width,min-width] duration-200 ${isResizingSidebar ? 'select-none' : ''} ${isMobile ? (mobileView === 'sidebar' ? 'w-full min-w-full' : 'hidden') : ''}`}
+        className={`relative z-[999] flex h-full flex-col border-r border-gray-200 bg-surface shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-[width,min-width] duration-200 ${isResizingSidebar ? 'select-none' : ''} ${isMobile ? (mobileView !== 'map' ? 'w-full min-w-full' : 'hidden') : ''}`}
         style={isMobile ? undefined : sidebarStyle}
       >
+        {!isMobile && (
         <div className="shrink-0 border-b border-gray-100 bg-white">
           <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center p-2' : 'justify-between gap-3 p-4'}`}>
             {!isSidebarCollapsed && (
@@ -601,7 +604,6 @@ export default function WaypointEditor({
                 )}
               </div>
             )}
-            {!isMobile && (
               <button
                 type="button"
                 onClick={() => setIsSidebarCollapsed((prev) => !prev)}
@@ -611,9 +613,9 @@ export default function WaypointEditor({
               >
                 {isSidebarCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
               </button>
-            )}
           </div>
         </div>
+        )}
 
         {isSidebarCollapsed ? (
           <div className="flex flex-1 flex-col items-center gap-4 px-2 py-4">
@@ -627,13 +629,18 @@ export default function WaypointEditor({
         ) : (
           <>
             <div className="flex-1 overflow-y-auto">
-              {sidebarHeader && (
+              {/* Details section — shown on desktop always, on mobile only in details tab */}
+              {sidebarHeader && (!isMobile || mobileView === 'details') && (
                 <div className="border-b border-gray-100">
                   {sidebarHeader}
                 </div>
               )}
 
+              {/* Waypoints section — shown on desktop always, on mobile only in waypoints tab */}
+              {(!isMobile || mobileView === 'waypoints') && (
+              <>
               <div className="sticky top-0 z-10 border-b border-gray-100 bg-white">
+                {!isMobile && (
                 <button
                   type="button"
                   onClick={() => setIsWaypointsCollapsed((prev) => !prev)}
@@ -642,9 +649,10 @@ export default function WaypointEditor({
                   <span className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted">Waypoints</span>
                   <ChevronDown className={`h-4 w-4 text-text-muted transition-transform ${isWaypointsCollapsed ? "-rotate-90" : ""}`} />
                 </button>
+                )}
 
                 {!isWaypointsCollapsed && (
-                  <div className="border-t border-gray-100 p-4">
+                  <div className={`${isMobile ? '' : 'border-t border-gray-100'} p-4`}>
                     <div className="flex items-center gap-2">
                       <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -834,9 +842,11 @@ export default function WaypointEditor({
                 )}
               </div>
             )}
+            </>
+            )}
             </div>
 
-            <div className="shrink-0 border-t border-gray-200 bg-background-light p-6">
+            <div className={`shrink-0 border-t border-gray-200 bg-background-light p-6 ${isMobile ? 'pb-20' : ''}`}>
               {sidebarFooterActions && (
                 <div className="mb-4 flex gap-2 border-b border-gray-200 pb-4">
                   {sidebarFooterActions}
@@ -978,8 +988,8 @@ export default function WaypointEditor({
         )}
       </aside>
 
-      {/* Map Viewport — hidden on mobile when viewing sidebar */}
-      <section className={`relative flex-1 h-full overflow-hidden ${isMobile && mobileView === 'sidebar' ? 'hidden' : ''}`}>
+      {/* Map Viewport — hidden on mobile when viewing details/waypoints */}
+      <section className={`relative flex-1 h-full overflow-hidden ${isMobile && mobileView !== 'map' ? 'hidden' : ''}`}>
         <MapContainer
           {...(initialBounds
             ? { bounds: initialBounds, boundsOptions: { padding: [60, 60] } }
@@ -1058,6 +1068,13 @@ export default function WaypointEditor({
       {isMobile && (
         <nav className="fixed bottom-0 left-0 right-0 z-[1100] flex border-t border-gray-200 bg-white safe-bottom">
           <button
+            onClick={() => { setMobileView('details'); setAddMode(false); }}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-bold ${mobileView === 'details' ? 'text-primary' : 'text-text-muted'}`}
+          >
+            <FilePlus className="h-5 w-5" />
+            Details
+          </button>
+          <button
             onClick={() => { setMobileView('map'); setAddMode(false); }}
             className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-bold ${mobileView === 'map' ? 'text-primary' : 'text-text-muted'}`}
           >
@@ -1065,11 +1082,11 @@ export default function WaypointEditor({
             Map
           </button>
           <button
-            onClick={() => { setMobileView('sidebar'); setAddMode(false); }}
-            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-bold ${mobileView === 'sidebar' ? 'text-primary' : 'text-text-muted'}`}
+            onClick={() => { setMobileView('waypoints'); setAddMode(false); }}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-bold ${mobileView === 'waypoints' ? 'text-primary' : 'text-text-muted'}`}
           >
             <List className="h-5 w-5" />
-            Details
+            Waypoints
           </button>
         </nav>
       )}

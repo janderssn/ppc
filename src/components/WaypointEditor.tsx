@@ -13,7 +13,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Maximize,
-  FilePlus
+  FilePlus,
+  Map as MapIcon,
+  List,
+  Crosshair
 } from 'lucide-react';
 import { downloadWaypoints, downloadZipExport, parseKml, parseZip, type ExportFormat, type ZipExportData } from '../lib/waypoint-export';
 import {
@@ -74,13 +77,9 @@ const WaypointMapItem: React.FC<WaypointComponentProps> = ({ wp, index, isSelect
     clickLng: number;
   } | null>(null);
 
-  const handleMouseDown = (e: L.LeafletMouseEvent) => {
-    L.DomEvent.stopPropagation(e);
-    onSelect(wp.id);
-
+  const startDrag = (latlng: L.LatLng) => {
     const center = L.latLng(wp.lat, wp.lng);
-    const clickPos = e.latlng;
-    const distToCenter = map.distance(center, clickPos);
+    const distToCenter = map.distance(center, latlng);
 
     const threshold = Math.max(wp.radius * 0.15, 20);
     if (Math.abs(distToCenter - wp.radius) < threshold) {
@@ -93,33 +92,31 @@ const WaypointMapItem: React.FC<WaypointComponentProps> = ({ wp, index, isSelect
       lat: wp.lat,
       lng: wp.lng,
       radius: wp.radius,
-      clickLat: e.latlng.lat,
-      clickLng: e.latlng.lng
+      clickLat: latlng.lat,
+      clickLng: latlng.lng
     };
 
     map.dragging.disable();
-    map.on('mousemove', handleMouseMove);
-    map.on('mouseup', handleMouseUp);
   };
 
-  const handleMouseMove = (e: L.LeafletMouseEvent) => {
+  const moveDrag = (latlng: L.LatLng) => {
     if (!isDragging.current || !dragStartData.current) return;
 
     if (isDragging.current === 'move') {
-      const deltaLat = e.latlng.lat - dragStartData.current.clickLat;
-      const deltaLng = e.latlng.lng - dragStartData.current.clickLng;
+      const deltaLat = latlng.lat - dragStartData.current.clickLat;
+      const deltaLng = latlng.lng - dragStartData.current.clickLng;
       onUpdate(wp.id, {
         lat: dragStartData.current.lat + deltaLat,
         lng: dragStartData.current.lng + deltaLng
       });
     } else if (isDragging.current === 'resize') {
       const center = L.latLng(dragStartData.current.lat, dragStartData.current.lng);
-      const newRadius = map.distance(center, e.latlng);
+      const newRadius = map.distance(center, latlng);
       onUpdate(wp.id, { radius: Math.max(10, Math.round(newRadius)) });
     }
   };
 
-  const handleMouseUp = () => {
+  const endDrag = () => {
     isDragging.current = null;
     dragStartData.current = null;
     map.dragging.enable();
@@ -127,9 +124,73 @@ const WaypointMapItem: React.FC<WaypointComponentProps> = ({ wp, index, isSelect
     map.off('mouseup', handleMouseUp);
   };
 
+  const handleMouseDown = (e: L.LeafletMouseEvent) => {
+    L.DomEvent.stopPropagation(e);
+    onSelect(wp.id);
+    startDrag(e.latlng);
+    map.on('mousemove', handleMouseMove);
+    map.on('mouseup', handleMouseUp);
+  };
+
+  const handleMouseMove = (e: L.LeafletMouseEvent) => {
+    moveDrag(e.latlng);
+  };
+
+  const handleMouseUp = () => {
+    endDrag();
+  };
+
+  const circleRef = useRef<L.Circle | null>(null);
+
+  useEffect(() => {
+    const circle = circleRef.current;
+    if (!circle) return;
+    const el = circle.getElement();
+    if (!el) return;
+
+    let touchActive = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      e.stopPropagation();
+      touchActive = true;
+      onSelect(wp.id);
+      const touch = e.touches[0];
+      const latlng = map.containerPointToLatLng(L.point(touch.clientX - map.getContainer().getBoundingClientRect().left, touch.clientY - map.getContainer().getBoundingClientRect().top));
+      startDrag(latlng);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchActive || e.touches.length !== 1) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = map.getContainer().getBoundingClientRect();
+      const latlng = map.containerPointToLatLng(L.point(touch.clientX - rect.left, touch.clientY - rect.top));
+      moveDrag(latlng);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!touchActive) return;
+      touchActive = false;
+      endDrag();
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  });
+
   return (
     <>
       <Circle
+        ref={circleRef}
         center={[wp.lat, wp.lng]}
         radius={wp.radius}
         pathOptions={{
@@ -164,10 +225,13 @@ function computeWaypointBounds(waypoints: Waypoint[]): L.LatLngBounds | null {
   return bounds;
 }
 
-function MapEvents({ onMapClick, onClearSelection }: { onMapClick: (lat: number, lng: number) => void, onClearSelection: () => void }) {
+function MapEvents({ onMapClick, onClearSelection, addMode, onAddModeUsed }: { onMapClick: (lat: number, lng: number) => void, onClearSelection: () => void, addMode?: boolean, onAddModeUsed?: () => void }) {
   useMapEvents({
     click(e) {
-      if (e.originalEvent.ctrlKey || e.originalEvent.metaKey) {
+      if (addMode) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+        onAddModeUsed?.();
+      } else if (e.originalEvent.ctrlKey || e.originalEvent.metaKey) {
         onMapClick(e.latlng.lat, e.latlng.lng);
       } else {
         onClearSelection();
@@ -285,6 +349,18 @@ const MapResizeObserver: React.FC = () => {
   return null;
 };
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 const PRESET_RADII = [200, 400, 1000, 2000, 3000];
 const PRESET_SCORES = [1, 2, 3, 4, 5, 10, 15, 20];
 
@@ -328,6 +404,7 @@ export default function WaypointEditor({
   templates,
   onLoadTemplate,
 }: WaypointEditorProps) {
+  const isMobile = useIsMobile();
   const startWaypoints = controlledWaypoints ?? initialWaypoints;
   const initialBounds = useMemo(() => computeWaypointBounds(startWaypoints), []);
   const [waypoints, setWaypoints] = useState<Waypoint[]>(startWaypoints);
@@ -345,6 +422,10 @@ export default function WaypointEditor({
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
   const [isWaypointsCollapsed, setIsWaypointsCollapsed] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // Mobile view state: 'map' or 'sidebar'
+  const [mobileView, setMobileView] = useState<'map' | 'sidebar'>('map');
+  // Mobile add-waypoint mode: tap on map to place
+  const [addMode, setAddMode] = useState(false);
   const sidebarStyle = isSidebarCollapsed
     ? { width: '3.5rem', minWidth: '3.5rem' }
     : { width: `${sidebarWidth}px`, minWidth: `${sidebarWidth}px` };
@@ -502,11 +583,11 @@ export default function WaypointEditor({
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
-      {/* Sidebar */}
+    <div className="flex h-full w-full overflow-hidden relative">
+      {/* Sidebar — hidden on mobile when viewing map */}
       <aside
-        className={`relative z-[999] flex h-full flex-col border-r border-gray-200 bg-surface shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-[width,min-width] duration-200 ${isResizingSidebar ? 'select-none' : ''}`}
-        style={sidebarStyle}
+        className={`relative z-[999] flex h-full flex-col border-r border-gray-200 bg-surface shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-[width,min-width] duration-200 ${isResizingSidebar ? 'select-none' : ''} ${isMobile ? (mobileView === 'sidebar' ? 'w-full min-w-full' : 'hidden') : ''}`}
+        style={isMobile ? undefined : sidebarStyle}
       >
         <div className="shrink-0 border-b border-gray-100 bg-white">
           <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center p-2' : 'justify-between gap-3 p-4'}`}>
@@ -520,15 +601,17 @@ export default function WaypointEditor({
                 )}
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => setIsSidebarCollapsed((prev) => !prev)}
-              className="rounded-md border border-gray-200 bg-white p-2 text-text-muted transition-colors hover:bg-gray-50 hover:text-text-main"
-              aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {isSidebarCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
-            </button>
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                className="rounded-md border border-gray-200 bg-white p-2 text-text-muted transition-colors hover:bg-gray-50 hover:text-text-main"
+                aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              >
+                {isSidebarCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+              </button>
+            )}
           </div>
         </div>
 
@@ -883,7 +966,7 @@ export default function WaypointEditor({
             </div>
           </>
         )}
-        {!isSidebarCollapsed && (
+        {!isSidebarCollapsed && !isMobile && (
           <div
             className="absolute right-0 top-0 z-10 h-full w-2 cursor-col-resize bg-transparent transition-colors hover:bg-primary/10"
             onMouseDown={(event) => {
@@ -895,8 +978,8 @@ export default function WaypointEditor({
         )}
       </aside>
 
-      {/* Map Viewport */}
-      <section className="relative flex-1 h-full overflow-hidden">
+      {/* Map Viewport — hidden on mobile when viewing sidebar */}
+      <section className={`relative flex-1 h-full overflow-hidden ${isMobile && mobileView === 'sidebar' ? 'hidden' : ''}`}>
         <MapContainer
           {...(initialBounds
             ? { bounds: initialBounds, boundsOptions: { padding: [60, 60] } }
@@ -919,6 +1002,8 @@ export default function WaypointEditor({
           <MapEvents
             onMapClick={handleMapClick}
             onClearSelection={() => handleSelect(null)}
+            addMode={addMode}
+            onAddModeUsed={() => setAddMode(false)}
           />
 
           <CustomControls layerType={layerType} setLayerType={setLayerType} waypoints={waypoints} />
@@ -937,8 +1022,8 @@ export default function WaypointEditor({
           ))}
         </MapContainer>
 
-        {/* Tooltip Guide */}
-        {!readOnly && (
+        {/* Tooltip Guide — desktop only */}
+        {!readOnly && !isMobile && (
           <div className="absolute bottom-6 left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/40 px-4 py-2 text-xs font-medium text-text-main shadow-float glass-panel">
             <MousePointer2 className="h-4 w-4 text-primary" />
             <span className="flex items-center gap-1.5">
@@ -948,8 +1033,46 @@ export default function WaypointEditor({
           </div>
         )}
 
+        {/* Mobile: add-mode tooltip */}
+        {!readOnly && isMobile && addMode && (
+          <div className="absolute top-4 left-1/2 z-[1000] flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold text-white shadow-lg">
+            <Crosshair className="h-4 w-4" />
+            Tap map to place waypoint
+          </div>
+        )}
+
+        {/* Mobile: floating add-waypoint button */}
+        {!readOnly && isMobile && mobileView === 'map' && !addMode && (
+          <button
+            onClick={() => setAddMode(true)}
+            className="absolute bottom-20 right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
+            title="Add waypoint"
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+        )}
 
       </section>
+
+      {/* Mobile bottom tab bar */}
+      {isMobile && (
+        <nav className="fixed bottom-0 left-0 right-0 z-[1100] flex border-t border-gray-200 bg-white safe-bottom">
+          <button
+            onClick={() => { setMobileView('map'); setAddMode(false); }}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-bold ${mobileView === 'map' ? 'text-primary' : 'text-text-muted'}`}
+          >
+            <MapIcon className="h-5 w-5" />
+            Map
+          </button>
+          <button
+            onClick={() => { setMobileView('sidebar'); setAddMode(false); }}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-bold ${mobileView === 'sidebar' ? 'text-primary' : 'text-text-muted'}`}
+          >
+            <List className="h-5 w-5" />
+            Details
+          </button>
+        </nav>
+      )}
     </div>
   );
 }

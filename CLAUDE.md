@@ -23,7 +23,6 @@ Single-page React app. All state is local — no router, no backend.
 - **`src/App.tsx`** — Root component. Manages competition metadata (title, dates, description, banner, participants) and waypoints in local state. Renders sidebar header form and WaypointEditor.
 - **`src/components/WaypointEditor.tsx`** — Interactive Leaflet map editor. Handles waypoint CRUD, drag-to-move, drag-border-to-resize, search, import/export.
 - **`src/lib/waypoint-export.ts`** — Multi-format import/export (KML, GPX, CUP, WPT, ZIP).
-- **`src/lib/haversine.ts`** — Haversine distance calculation.
 - **`src/types.ts`** — `Waypoint` interface and seed data.
 - **`src/index.css`** — Tailwind v4 theme tokens and utility classes.
 

@@ -477,8 +477,6 @@ export default function WaypointEditor({
     );
   }, [waypoints, searchTerm]);
 
-  const selectedWp = useMemo(() => selectedId ? waypoints.find(w => w.id === selectedId) ?? null : null, [waypoints, selectedId]);
-
   const totalPoints = useMemo(() =>
     waypoints.reduce((acc, wp) => acc + wp.score, 0),
   [waypoints]);
@@ -1057,145 +1055,11 @@ export default function WaypointEditor({
         {!readOnly && isMobile && mobileView === 'map' && !addMode && (
           <button
             onClick={() => setAddMode(true)}
-            className={`absolute right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform ${selectedId && selectedWp ? 'bottom-[22rem]' : 'bottom-20'}`}
+            className="absolute bottom-20 right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
             title="Add waypoint"
           >
             <Plus className="h-6 w-6" />
           </button>
-        )}
-
-        {/* Mobile: waypoint popup when selected on map */}
-        {isMobile && mobileView === 'map' && selectedId && selectedWp && (
-          <div className="absolute bottom-14 left-0 right-0 z-[1000] flex flex-col rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.12)]" style={{ maxHeight: '50vh' }}>
-            {/* Header — fixed */}
-            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">
-                  {waypoints.findIndex(w => w.id === selectedId) + 1}
-                </span>
-                {!readOnly ? (
-                  <input
-                    className="w-20 border-none bg-transparent p-0 text-sm font-bold text-text-main focus:ring-0"
-                    value={selectedWp.name}
-                    onChange={(e) => updateWaypoint(selectedWp.id, { name: e.target.value })}
-                    maxLength={6}
-                  />
-                ) : (
-                  <span className="text-sm font-bold text-text-main">{selectedWp.name}</span>
-                )}
-                {!readOnly ? (
-                  <input
-                    className="min-w-0 flex-1 border-none bg-transparent p-0 text-xs text-text-muted focus:text-text-main focus:ring-0"
-                    placeholder="Description"
-                    value={selectedWp.description || ''}
-                    onChange={(e) => updateWaypoint(selectedWp.id, { description: e.target.value })}
-                  />
-                ) : (
-                  selectedWp.description && <span className="text-xs text-text-muted">{selectedWp.description}</span>
-                )}
-              </div>
-              <button
-                onClick={() => handleSelect(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:bg-gray-100"
-              >
-                <span className="text-lg leading-none">&times;</span>
-              </button>
-            </div>
-
-            {/* Content — scrollable */}
-            <div className="flex-1 overflow-y-auto px-4 py-3">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold tracking-wider text-text-muted uppercase">Radius (m)</label>
-                  {!readOnly ? (
-                    <>
-                      <div className="flex flex-wrap gap-1">
-                        {PRESET_RADII.map(r => (
-                          <button
-                            key={r}
-                            onClick={() => updateWaypoint(selectedWp.id, { radius: r })}
-                            className={`rounded-md px-2 py-1 text-[11px] font-bold transition-colors ${selectedWp.radius === r ? 'bg-primary text-white' : 'bg-gray-100 text-text-muted hover:bg-gray-200'}`}
-                          >
-                            {r}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          className="w-full rounded border-gray-200 bg-white py-1 pl-2 pr-6 text-sm font-medium tabular-nums focus:border-primary focus:ring-primary/20"
-                          value={selectedWp.radius}
-                          onChange={(e) => updateWaypoint(selectedWp.id, { radius: Number(e.target.value) })}
-                        />
-                        <span className="absolute right-2 top-1.5 text-[10px] text-text-muted">m</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="rounded border border-gray-200 bg-white py-1 pl-2 pr-6 text-sm font-medium tabular-nums text-text-main">
-                      {selectedWp.radius}m
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold tracking-wider text-text-muted uppercase">Score</label>
-                  {!readOnly ? (
-                    <>
-                      <div className="flex flex-wrap gap-1">
-                        {PRESET_SCORES.map(s => (
-                          <button
-                            key={s}
-                            onClick={() => updateWaypoint(selectedWp.id, { score: s })}
-                            className={`rounded-md px-2 py-1 text-[11px] font-bold transition-colors ${selectedWp.score === s ? 'bg-primary text-white' : 'bg-gray-100 text-text-muted hover:bg-gray-200'}`}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          className="w-full rounded border-gray-200 bg-white py-1 px-2 text-sm font-medium tabular-nums focus:border-primary focus:ring-primary/20"
-                          value={selectedWp.score}
-                          onChange={(e) => updateWaypoint(selectedWp.id, { score: Number(e.target.value) })}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="rounded border border-gray-200 bg-white py-1 px-2 text-sm font-medium tabular-nums text-text-main">
-                      {selectedWp.score}
-                    </div>
-                  )}
-                </div>
-                <div className="col-span-2 flex items-center gap-1 text-[10px] text-text-muted">
-                  <MapPin className="h-3 w-3" />
-                  {selectedWp.lat.toFixed(4)}&deg; N, {selectedWp.lng.toFixed(4)}&deg; E
-                </div>
-              </div>
-            </div>
-
-            {/* Footer — fixed */}
-            {!readOnly && (
-              <div className="flex gap-2 border-t border-gray-100 px-4 py-3">
-                <button
-                  onClick={() => {
-                    if (window.confirm(`Delete waypoint "${selectedWp.name}"?`)) {
-                      deleteWaypoint(selectedWp.id);
-                    }
-                  }}
-                  className="flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-accent-destructive transition-colors hover:bg-red-50"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete
-                </button>
-                <button
-                  onClick={() => handleSelect(null)}
-                  className="flex flex-1 items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white transition-colors"
-                >
-                  Done
-                </button>
-              </div>
-            )}
-          </div>
         )}
 
       </section>

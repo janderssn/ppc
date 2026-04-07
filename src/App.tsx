@@ -7,9 +7,9 @@ import { INITIAL_WAYPOINTS, TEMPLATES } from './types';
 
 function IntroPopup({ onClose }: { onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="relative mx-4 max-w-lg rounded-2xl bg-white p-8 shadow-2xl"
+        className="relative mx-4 max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button

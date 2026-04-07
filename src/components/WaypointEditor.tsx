@@ -1041,11 +1041,11 @@ export default function WaypointEditor({
           </div>
         )}
 
-        {/* Mobile: floating add-waypoint button */}
+        {/* Mobile: floating add-waypoint button — above the tab bar */}
         {!readOnly && isMobile && mobileView === 'map' && !addMode && (
           <button
             onClick={() => setAddMode(true)}
-            className="absolute bottom-20 right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
+            className="absolute bottom-[4.5rem] right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
             title="Add waypoint"
           >
             <Plus className="h-6 w-6" />

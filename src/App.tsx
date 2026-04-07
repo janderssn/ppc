@@ -31,7 +31,8 @@ function IntroPopup({ onClose }: { onClose: () => void }) {
           <div>
             <h3 className="mb-1 font-bold">Getting started</h3>
             <ul className="list-inside list-disc space-y-1 text-text-muted">
-              <li><strong className="text-text-main">Ctrl + Click</strong> on the map to place a waypoint</li>
+              <li className="hidden md:list-item"><strong className="text-text-main">Ctrl + Click</strong> on the map to place a waypoint</li>
+              <li className="md:hidden">Tap the <strong className="text-text-main">+</strong> button, then tap the map to place a waypoint</li>
               <li>Click a waypoint to select it, then edit name, radius and score</li>
               <li>Drag a waypoint to move it, drag its border to resize</li>
               <li>Use <strong className="text-text-main">Import</strong> to load a template or an existing file (KML, GPX, CUP, WPT, ZIP)</li>
@@ -113,7 +114,8 @@ function HelpPanel({ onClose }: { onClose: () => void }) {
                 </div>
                 <div>
                   <p className="font-medium text-text-main">Place waypoints</p>
-                  <p className="text-text-muted">Hold <kbd className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-bold text-text-main border border-gray-200">Ctrl</kbd> and click anywhere on the map to create a new waypoint.</p>
+                  <p className="text-text-muted hidden md:block">Hold <kbd className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-bold text-text-main border border-gray-200">Ctrl</kbd> and click anywhere on the map to create a new waypoint.</p>
+                  <p className="text-text-muted md:hidden">Tap the <strong className="text-text-main">+</strong> button on the map, then tap where you want to place a new waypoint.</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -493,7 +495,7 @@ export default function App() {
 
       <button
         onClick={() => setShowHelp(true)}
-        className="fixed right-4 top-4 z-[1500] flex h-9 w-9 items-center justify-center rounded-full border border-white/40 bg-white/80 shadow-float backdrop-blur transition-all hover:scale-105 hover:bg-white"
+        className="fixed right-4 top-4 z-[1500] flex h-9 w-9 items-center justify-center rounded-full border border-white/40 bg-white/80 shadow-float backdrop-blur transition-all hover:scale-105 hover:bg-white md:right-4 md:top-4"
         title="Help & Instructions"
       >
         <HelpCircle className="h-5 w-5 text-text-main" />

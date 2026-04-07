@@ -42,3 +42,15 @@
 .wp-icon-label::after {
   content: attr(data-text);
 }
+
+/* Mobile safe-area bottom padding for bottom tab bar */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* On mobile, shift map controls up above the bottom tab bar */
+@media (max-width: 767px) {
+  .leaflet-bottom {
+    bottom: 56px !important;
+  }
+}

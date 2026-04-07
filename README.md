@@ -4,6 +4,8 @@ A browser-based editor for creating waypoint sets for paragliding **Point Pickin
 
 **Live:** [ppc.fly.dev](https://ppc.fly.dev)
 
+![PPC Lite — Waypoint Editor](screenshot.png)
+
 ## What is a PPC?
 
 A Point Picking Competition is a paragliding format where pilots collect points by flying through predefined geographic waypoints. Each waypoint is a cylinder with a center coordinate, a radius and a score value. Pilots upload their GPS tracklogs and the scoring system on [paralogg.se](https://www.paralogg.se) checks which waypoints they passed through.

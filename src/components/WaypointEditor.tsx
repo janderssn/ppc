@@ -1110,7 +1110,8 @@ export default function WaypointEditor({
         {!readOnly && isMobile && mobileView === 'map' && !addMode && (
           <button
             onClick={() => setAddMode(true)}
-            className="absolute bottom-20 right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
+            className="absolute right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
+            style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
             title="Add waypoint"
           >
             <Plus className="h-6 w-6" />

@@ -498,7 +498,7 @@ export default function App() {
   const closeIntro = () => setShowIntro(false);
 
   return (
-    <div className="h-screen w-screen font-sans">
+    <div className="h-dvh w-screen font-sans">
       {showIntro && <IntroPopup onClose={closeIntro} />}
       {showHelp && <HelpPanel onClose={() => setShowHelp(false)} />}
 

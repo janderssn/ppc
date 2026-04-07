@@ -9,60 +9,69 @@ function IntroPopup({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="relative mx-4 max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl"
+        className="relative mx-4 flex max-w-lg max-h-[calc(100vh-2rem)] flex-col rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-main"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        {/* Header — fixed */}
+        <div className="shrink-0 px-8 pt-8 pb-0">
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 rounded-full p-1 text-text-muted transition-colors hover:bg-gray-100 hover:text-text-main"
+          >
+            <X className="h-5 w-5" />
+          </button>
 
-        <h2 className="mb-1 text-xl font-bold text-text-main">PPC Waypoint Editor</h2>
-        <p className="mb-5 text-sm text-text-muted">
-          Create waypoint sets for Point Picking Competitions scored on{' '}
-          <a href="https://www.paralogg.se" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">
-            paralogg.se
-          </a>
-        </p>
+          <h2 className="mb-1 text-xl font-bold text-text-main">PPC Waypoint Editor</h2>
+          <p className="mb-4 text-sm text-text-muted">
+            Create waypoint sets for Point Picking Competitions scored on{' '}
+            <a href="https://www.paralogg.se" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">
+              paralogg.se
+            </a>
+          </p>
+        </div>
 
-        <div className="space-y-4 text-sm text-text-main">
-          <div>
-            <h3 className="mb-1 font-bold">Getting started</h3>
-            <ul className="list-inside list-disc space-y-1 text-text-muted">
-              <li className="hidden md:list-item"><strong className="text-text-main">Ctrl + Click</strong> on the map to place a waypoint</li>
-              <li className="md:hidden">Tap the <strong className="text-text-main">+</strong> button, then tap the map to place a waypoint</li>
-              <li>Click a waypoint to select it, then edit name, radius and score</li>
-              <li>Drag a waypoint to move it, drag its border to resize</li>
-              <li>Use <strong className="text-text-main">Import</strong> to load a template or an existing file (KML, GPX, CUP, WPT, ZIP)</li>
-            </ul>
-          </div>
+        {/* Content — scrollable */}
+        <div className="flex-1 overflow-y-auto px-8 py-1">
+          <div className="space-y-4 text-sm text-text-main">
+            <div>
+              <h3 className="mb-1 font-bold">Getting started</h3>
+              <ul className="list-inside list-disc space-y-1 text-text-muted">
+                <li className="hidden md:list-item"><strong className="text-text-main">Ctrl + Click</strong> on the map to place a waypoint</li>
+                <li className="md:hidden">Tap the <strong className="text-text-main">+</strong> button, then tap the map to place a waypoint</li>
+                <li>Click a waypoint to select it, then edit name, radius and score</li>
+                <li>Drag a waypoint to move it, drag its border to resize</li>
+                <li>Use <strong className="text-text-main">Import</strong> to load a template or an existing file (KML, GPX, CUP, WPT, ZIP)</li>
+              </ul>
+            </div>
 
-          <div>
-            <h3 className="mb-1 font-bold">Competition details</h3>
-            <p className="text-text-muted">
-              Fill in the title, description, dates, banner image and participant list in the sidebar. Participants need a name and their{' '}
-              <a href="https://www.flightlog.org" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">flightlog.org</a> ID.
-            </p>
-          </div>
+            <div>
+              <h3 className="mb-1 font-bold">Competition details</h3>
+              <p className="text-text-muted">
+                Fill in the title, description, dates, banner image and participant list in the sidebar. Participants need a name and their{' '}
+                <a href="https://www.flightlog.org" target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline hover:text-primary/80">flightlog.org</a> ID.
+              </p>
+            </div>
 
-          <div>
-            <h3 className="mb-1 font-bold">Publishing your competition</h3>
-            <ol className="list-inside list-decimal space-y-1 text-text-muted">
-              <li>When your waypoints and details are ready, click <strong className="text-text-main">Export &rarr; ZIP</strong></li>
-              <li>This creates a package with waypoints in all formats, metadata, participants and your banner image</li>
-              <li>Send the ZIP file to the paralogg.se administrator by email to get it published</li>
-            </ol>
+            <div>
+              <h3 className="mb-1 font-bold">Publishing your competition</h3>
+              <ol className="list-inside list-decimal space-y-1 text-text-muted">
+                <li>When your waypoints and details are ready, click <strong className="text-text-main">Export &rarr; ZIP</strong></li>
+                <li>This creates a package with waypoints in all formats, metadata, participants and your banner image</li>
+                <li>Send the ZIP file to the paralogg.se administrator by email to get it published</li>
+              </ol>
+            </div>
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="mt-6 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary/90"
-        >
-          Get started
-        </button>
+        {/* Footer — fixed */}
+        <div className="shrink-0 px-8 pb-8 pt-4">
+          <button
+            onClick={onClose}
+            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary/90"
+          >
+            Get started
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -489,7 +498,7 @@ export default function App() {
   const closeIntro = () => setShowIntro(false);
 
   return (
-    <div className="h-screen w-screen font-sans">
+    <div className="h-dvh w-screen font-sans">
       {showIntro && <IntroPopup onClose={closeIntro} />}
       {showHelp && <HelpPanel onClose={() => setShowHelp(false)} />}
 

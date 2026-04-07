@@ -227,9 +227,63 @@ function computeWaypointBounds(waypoints: Waypoint[]): L.LatLngBounds | null {
   return bounds;
 }
 
-function MapEvents({ onMapClick, onClearSelection, addMode, onAddModeUsed }: { onMapClick: (lat: number, lng: number) => void, onClearSelection: () => void, addMode?: boolean, onAddModeUsed?: () => void }) {
+function MapEvents({ onMapClick, onClearSelection, addMode, onAddModeUsed, enableLongPress }: { onMapClick: (lat: number, lng: number) => void, onClearSelection: () => void, addMode?: boolean, onAddModeUsed?: () => void, enableLongPress?: boolean }) {
+  const map = useMap();
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!enableLongPress) return;
+    const container = map.getContainer();
+
+    const clearTimer = () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) { clearTimer(); return; }
+      longPressFired.current = false;
+      const touch = e.touches[0];
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+      longPressTimer.current = setTimeout(() => {
+        longPressFired.current = true;
+        const rect = container.getBoundingClientRect();
+        const latlng = map.containerPointToLatLng(L.point(touch.clientX - rect.left, touch.clientY - rect.top));
+        onMapClick(latlng.lat, latlng.lng);
+      }, 500);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchStartPos.current || e.touches.length !== 1) { clearTimer(); return; }
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartPos.current.x;
+      const dy = touch.clientY - touchStartPos.current.y;
+      if (dx * dx + dy * dy > 100) clearTimer();
+    };
+
+    const onTouchEnd = () => { clearTimer(); };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: true });
+    container.addEventListener('touchend', onTouchEnd);
+    container.addEventListener('touchcancel', onTouchEnd);
+
+    return () => {
+      clearTimer();
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+      container.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [enableLongPress, map, onMapClick]);
+
   useMapEvents({
     click(e) {
+      if (longPressFired.current) { longPressFired.current = false; return; }
       if (addMode) {
         onMapClick(e.latlng.lat, e.latlng.lng);
         onAddModeUsed?.();
@@ -1014,6 +1068,7 @@ export default function WaypointEditor({
             onClearSelection={() => handleSelect(null)}
             addMode={addMode}
             onAddModeUsed={() => setAddMode(false)}
+            enableLongPress={isMobile && !readOnly}
           />
 
           <CustomControls layerType={layerType} setLayerType={setLayerType} waypoints={waypoints} />
@@ -1055,7 +1110,8 @@ export default function WaypointEditor({
         {!readOnly && isMobile && mobileView === 'map' && !addMode && (
           <button
             onClick={() => setAddMode(true)}
-            className="absolute bottom-[4.5rem] right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
+            className="absolute right-4 z-[1000] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-95 transition-transform"
+            style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}
             title="Add waypoint"
           >
             <Plus className="h-6 w-6" />
